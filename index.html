@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>シールカウンター</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf-autotable.min.js"></script>
+<style>
+  :root{
+    --c-red:#e0483e; --c-blue:#3e7ce0; --c-yellow:#e0b93e; --c-green:#3ea85c;
+    --bg:#f5f5f7; --card:#fff; --border:#ddd; --text:#222;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",sans-serif;
+    background:var(--bg); color:var(--text); padding:12px;
+  }
+  h1{font-size:16px; margin:0 0 12px;}
+  .section{background:var(--card); border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:12px;}
+  .section h2{font-size:13px; margin:0 0 8px; color:#666;}
+
+  .colorgrid{display:grid; grid-template-columns:repeat(4,1fr); gap:8px;}
+  .colorbtn{
+    border:none; border-radius:10px; color:#fff; font-weight:bold; font-size:13px;
+    padding:14px 4px; cursor:pointer; text-align:center; transition:transform .1s;
+  }
+  .colorbtn:active{transform:scale(0.95);}
+  .colorbtn .n{display:block; font-size:22px; margin-top:4px;}
+  .red{background:var(--c-red);} .blue{background:var(--c-blue);}
+  .yellow{background:var(--c-yellow);} .green{background:var(--c-green);}
+  .colorbtn.selected{outline:3px solid #222; outline-offset:2px;}
+
+  .prefwrap{max-height:260px; overflow-y:auto; border:1px solid var(--border); border-radius:8px;}
+  .prefgrid{display:grid; grid-template-columns:repeat(4,1fr); gap:4px; padding:6px;}
+  @media (max-width:420px){ .prefgrid{grid-template-columns:repeat(3,1fr);} }
+  .prefbtn{
+    border:1px solid var(--border); background:#fafafa; border-radius:6px;
+    padding:8px 2px; font-size:12px; cursor:pointer;
+  }
+  .prefbtn:active{background:#e8e8e8;}
+  .prefbtn .cnt{display:block; font-size:11px; color:#888; margin-top:2px;}
+
+  table{width:100%; border-collapse:collapse; font-size:12px;}
+  th,td{border:1px solid var(--border); padding:5px 4px; text-align:center;}
+  th{background:#eee;}
+  td.pref{text-align:left; font-weight:bold;}
+  tr.zero{color:#bbb;}
+
+  .totals{display:flex; justify-content:space-between; font-size:13px; margin-top:8px; padding-top:8px; border-top:1px solid var(--border);}
+  .btnrow{display:flex; gap:8px; margin-top:10px;}
+  .btnrow button{flex:1; padding:10px; border:1px solid var(--border); border-radius:8px; background:#fff; font-size:13px; cursor:pointer;}
+  .btnrow button.danger{color:#c0392b; border-color:#c0392b;}
+  .status{font-size:11px; color:#999; text-align:right; margin-top:4px;}
+</style>
+</head>
+<body>
+
+<h1>シールカウンター（色 × 都道府県）</h1>
+
+<div class="section">
+  <h2>1. 色を選択</h2>
+  <div class="colorgrid" id="colorGrid"></div>
+</div>
+
+<div class="section">
+  <h2>2. 都道府県をタップ（選択中の色でカウント）</h2>
+  <div class="prefwrap"><div class="prefgrid" id="prefGrid"></div></div>
+</div>
+
+<div class="section">
+  <h2>集計</h2>
+  <div style="overflow-x:auto;">
+    <table id="table"></table>
+  </div>
+  <div class="totals" id="totals"></div>
+  <div class="btnrow">
+    <button id="undoBtn">元に戻す</button>
+    <button id="resetBtn" class="danger">全リセット</button>
+  </div>
+  <div class="btnrow">
+    <button id="pdfBtn">PDF出力（0件除外）</button>
+    <button id="pdfAllBtn">PDF出力（全都道府県）</button>
+  </div>
+  <div class="status" id="status"></div>
+</div>
+
+<script>
+const COLORS = [
+  {key:'red', label:'赤', cls:'red'},
+  {key:'blue', label:'青', cls:'blue'},
+  {key:'yellow', label:'黄', cls:'yellow'},
+  {key:'green', label:'緑', cls:'green'}
+];
+
+const PREFS = ["北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県",
+"茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県",
+"新潟県","富山県","石川県","福井県","山梨県","長野県",
+"岐阜県","静岡県","愛知県","三重県",
+"滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県",
+"鳥取県","島根県","岡山県","広島県","山口県",
+"徳島県","香川県","愛媛県","高知県",
+"福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県"];
+
+const ROMAJI = ["Hokkaido","Aomori","Iwate","Miyagi","Akita","Yamagata","Fukushima",
+"Ibaraki","Tochigi","Gunma","Saitama","Chiba","Tokyo","Kanagawa",
+"Niigata","Toyama","Ishikawa","Fukui","Yamanashi","Nagano",
+"Gifu","Shizuoka","Aichi","Mie",
+"Shiga","Kyoto","Osaka","Hyogo","Nara","Wakayama",
+"Tottori","Shimane","Okayama","Hiroshima","Yamaguchi",
+"Tokushima","Kagawa","Ehime","Kochi",
+"Fukuoka","Saga","Nagasaki","Kumamoto","Oita","Miyazaki","Kagoshima","Okinawa"];
+const PREF_ROMAJI = {}; PREFS.forEach((p,i)=> PREF_ROMAJI[p] = ROMAJI[i]);
+
+const STORAGE_KEY = 'sticker-counter-data-v1';
+let selectedColor = COLORS[0].key;
+let counts = {}; // counts[pref][color] = number
+let history = []; // for undo: {pref, color}
+
+PREFS.forEach(p => { counts[p] = {}; COLORS.forEach(c => counts[p][c.key] = 0); });
+
+function setStatus(msg){
+  document.getElementById('status').textContent = msg;
+}
+
+async function save(){
+  try{
+    await window.storage.set(STORAGE_KEY, JSON.stringify({counts, history}), false);
+    setStatus('保存済み ' + new Date().toLocaleTimeString());
+  }catch(e){
+    setStatus('保存失敗（このセッションのみ保持）');
+  }
+}
+
+async function load(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, false);
+    if(res && res.value){
+      const data = JSON.parse(res.value);
+      if(data.counts) counts = data.counts;
+      if(data.history) history = data.history;
+    }
+  }catch(e){
+    // no existing data yet
+  }
+  render();
+}
+
+function renderColorGrid(){
+  const grid = document.getElementById('colorGrid');
+  grid.innerHTML = '';
+  COLORS.forEach(c => {
+    const total = PREFS.reduce((s,p)=> s + counts[p][c.key], 0);
+    const btn = document.createElement('button');
+    btn.className = 'colorbtn ' + c.cls + (c.key===selectedColor ? ' selected' : '');
+    btn.innerHTML = c.label + '<span class="n">' + total + '</span>';
+    btn.onclick = () => { selectedColor = c.key; render(); };
+    grid.appendChild(btn);
+  });
+}
+
+function renderPrefGrid(){
+  const grid = document.getElementById('prefGrid');
+  grid.innerHTML = '';
+  PREFS.forEach(p => {
+    const total = COLORS.reduce((s,c)=> s + counts[p][c.key], 0);
+    const btn = document.createElement('button');
+    btn.className = 'prefbtn';
+    btn.innerHTML = p + '<span class="cnt">' + total + '</span>';
+    btn.onclick = () => {
+      counts[p][selectedColor]++;
+      history.push({pref:p, color:selectedColor});
+      render();
+      save();
+    };
+    grid.appendChild(btn);
+  });
+}
+
+function renderTable(){
+  const table = document.getElementById('table');
+  let html = '<tr><th>都道府県</th>' + COLORS.map(c=>'<th>'+c.label+'</th>').join('') + '<th>計</th></tr>';
+  PREFS.forEach(p => {
+    const rowTotal = COLORS.reduce((s,c)=> s + counts[p][c.key], 0);
+    html += '<tr class="' + (rowTotal===0 ? 'zero' : '') + '">';
+    html += '<td class="pref">' + p + '</td>';
+    COLORS.forEach(c => html += '<td>' + counts[p][c.key] + '</td>');
+    html += '<td><b>' + rowTotal + '</b></td></tr>';
+  });
+  table.innerHTML = html;
+}
+
+function renderTotals(){
+  const totalsDiv = document.getElementById('totals');
+  const grand = PREFS.reduce((s,p)=> s + COLORS.reduce((s2,c)=> s2 + counts[p][c.key],0), 0);
+  const perColor = COLORS.map(c => c.label + ':' + PREFS.reduce((s,p)=> s + counts[p][c.key],0)).join('　');
+  totalsDiv.innerHTML = '<span>' + perColor + '</span><span>総計: ' + grand + '</span>';
+}
+
+function render(){
+  renderColorGrid();
+  renderPrefGrid();
+  renderTable();
+  renderTotals();
+}
+
+document.getElementById('undoBtn').onclick = () => {
+  const last = history.pop();
+  if(last){
+    counts[last.pref][last.color] = Math.max(0, counts[last.pref][last.color]-1);
+    render();
+    save();
+  }
+};
+
+document.getElementById('resetBtn').onclick = () => {
+  if(!confirm('全カウントをリセットします。よろしいですか？')) return;
+  PREFS.forEach(p => COLORS.forEach(c => counts[p][c.key]=0));
+  history = [];
+  render();
+  save();
+};
+
+function exportPDF(includeZero){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  doc.setFontSize(14);
+  doc.text('Sticker Count Report', 14, 15);
+  doc.setFontSize(9);
+  doc.text(new Date().toLocaleString('ja-JP'), 14, 21);
+
+  const head = [['Prefecture', ...COLORS.map(c=>c.key.toUpperCase()), 'Total']];
+  const body = [];
+  PREFS.forEach(p => {
+    const rowTotal = COLORS.reduce((s,c)=> s + counts[p][c.key], 0);
+    if(!includeZero && rowTotal === 0) return;
+    body.push([PREF_ROMAJI[p], ...COLORS.map(c=>counts[p][c.key]), rowTotal]);
+  });
+
+  const grand = PREFS.reduce((s,p)=> s + COLORS.reduce((s2,c)=> s2 + counts[p][c.key],0), 0);
+  const footRow = ['TOTAL', ...COLORS.map(c => PREFS.reduce((s,p)=> s + counts[p][c.key],0)), grand];
+
+  doc.autoTable({
+    head, body, foot: [footRow],
+    startY: 26,
+    styles: { font: 'helvetica', fontSize: 9 },
+    headStyles: { fillColor: [60,60,60] },
+    footStyles: { fillColor: [230,230,230], textColor: [0,0,0], fontStyle: 'bold' }
+  });
+
+  const fname = 'sticker-count_' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'-') + '.pdf';
+  doc.save(fname);
+}
+
+document.getElementById('pdfBtn').onclick = () => exportPDF(false);
+document.getElementById('pdfAllBtn').onclick = () => exportPDF(true);
+
+load();
+</script>
+</body>
+</html>
