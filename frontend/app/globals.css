@@ -170,10 +170,11 @@
   /* iOS のシステムカラー（ライト / ダーク） */
   :root {
     /* 穏やかな配色（iOS カレンダーのような淡い色）。強い原色は使わない */
-    --accent: #3a76c4;
-    --accent-pressed: #2d62a8;
-    --accent-soft: #e4eefa;
-    --accent-ink: #24558f;
+    /* Toloc のロゴのティール */
+    --accent: #0e7d72;
+    --accent-pressed: #0a675e;
+    --accent-soft: #dcf1ed;
+    --accent-ink: #0a5c54;
     --danger: #cf4b45;
     --success: #3f9b62;
     --warning: #b7791f;
@@ -215,10 +216,10 @@
     --separator: rgba(60, 60, 67, 0.18);
   }
   html.dark {
-    --accent: #7ab0ee;
-    --accent-pressed: #9cc4f2;
-    --accent-soft: rgba(122, 176, 238, 0.18);
-    --accent-ink: #a9cdf5;
+    --accent: #5cc6b6;
+    --accent-pressed: #82d5c8;
+    --accent-soft: rgba(92, 198, 182, 0.18);
+    --accent-ink: #9adfd3;
     --danger: #ff8f88;
     --success: #7dd3a0;
     --warning: #f3c27a;
@@ -314,9 +315,3 @@ html.dark .border-green-200 { border-color: rgba(48, 209, 88, 0.4); }
 
 /* iPhone のホームバー領域 */
 .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
-
-/* ウェブ検索（Google プログラム可能な検索エンジン）の見た目を iOS 風に寄せる */
-.cse-wrap .gsc-control-cse { border: 0 !important; padding: 4px !important; background: transparent !important; font-family: inherit !important; }
-.cse-wrap .gsc-result { border: 0 !important; }
-.cse-wrap .gs-title, .cse-wrap .gs-title * { color: #007aff !important; text-decoration: none !important; }
-.cse-wrap .gsc-adBlock { opacity: 0.85; }

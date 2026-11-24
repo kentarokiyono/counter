@@ -88,7 +88,7 @@ function CountdownWidget({ events }: { events: Event[] }) {
   const days = next ? daysUntil(ymd(new Date(next.start_time))) : 0;
 
   return (
-    <section className="relative overflow-hidden rounded-2xl bg-linear-to-br from-p-teal to-p-blue p-5 text-accent-ink">
+    <section className="relative overflow-hidden rounded-2xl bg-linear-to-br from-p-teal to-p-green p-5 text-accent-ink">
       <p className="text-[13px] font-semibold">次のイベント</p>
       {next ? (
         <Link href={`/events?event=${next.id}`} className="block active:opacity-70">

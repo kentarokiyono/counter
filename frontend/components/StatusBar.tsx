@@ -10,7 +10,7 @@ export default function StatusBar({ onOpenAccount }: { onOpenAccount: () => void
   return (
     <header className="sticky top-0 z-30 flex h-12 shrink-0 items-center justify-between gap-3 border-b border-separator bg-bar px-4 backdrop-blur-xl md:h-14 md:justify-end md:px-6">
       <Link href="/" className="flex items-center gap-2 md:hidden">
-        <img src="/logo-mark.svg" alt="" className="h-6 w-6" />
+        <img src="/toloc-logo.png" alt="" className="h-7 w-7" />
         <span className="text-[15px] font-bold text-label">Toloc OS</span>
       </Link>
       <button

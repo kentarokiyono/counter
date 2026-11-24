@@ -66,6 +66,20 @@ function hexToRgb(hex: string): [number, number, number] {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
+async function logoDataUrl(): Promise<string | null> {
+  try {
+    const blob = await (await fetch("/toloc-logo.png")).blob();
+    return await new Promise((resolve) => {
+      const r = new FileReader();
+      r.onload = () => resolve(typeof r.result === "string" ? r.result : null);
+      r.onerror = () => resolve(null);
+      r.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 export async function saveStickerPdf(survey: Survey, grid: Grid, includeZero: boolean) {
   const name = `${safeFileName(survey.title, "シール集計")}_${stamp()}.pdf`;
   return saveFile(name, { description: "PDF", accept: { "application/pdf": [".pdf"] } }, async () => {
@@ -74,10 +88,16 @@ export async function saveStickerPdf(survey: Survey, grid: Grid, includeZero: bo
     const colors = survey.colors;
 
     // 見出し
+    // ロゴ（右上）に重ならないよう、長い文字は縮める
     const put = (text: string, x: number, y: number, h: number, bold = false, color?: string) => {
       const img = textImage(text, bold, color);
-      doc.addImage(img.url, "PNG", x, y, h * img.ratio, h, img.alias, "FAST");
+      const maxW = 158;
+      const w = Math.min(h * img.ratio, maxW);
+      const hh = w / img.ratio;
+      doc.addImage(img.url, "PNG", x, y + (h - hh) / 2, w, hh, img.alias, "FAST");
     };
+    const logo = await logoDataUrl();
+    if (logo) doc.addImage(logo, "PNG", 176, 8, 20, 20, "toloc-logo", "FAST");
     put(survey.title, 14, 10, 7, true);
     const meta = [survey.survey_date, survey.location, `合計 ${grandTotal(grid).toLocaleString()}枚`].filter(Boolean).join("　");
     put(meta, 14, 19, 4.2, false, "#555555");
@@ -102,7 +122,7 @@ export async function saveStickerPdf(survey: Survey, grid: Grid, includeZero: bo
       theme: "grid",
       styles: { font: "helvetica", fontSize: 9, halign: "center", valign: "middle", cellPadding: 1.6, minCellHeight: 6.5 },
       headStyles: { fillColor: [242, 242, 247], textColor: [17, 17, 17], lineColor: [200, 200, 205] },
-      footStyles: { fillColor: [228, 238, 250], textColor: [17, 17, 17], fontStyle: "bold" },
+      footStyles: { fillColor: [220, 241, 237], textColor: [17, 17, 17], fontStyle: "bold" },
       bodyStyles: { lineColor: [220, 220, 225] },
       columnStyles: { 0: { cellWidth: 32, halign: "left" } },
       didParseCell: (data) => {

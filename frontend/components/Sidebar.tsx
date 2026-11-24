@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import NavIcon from "@/components/NavIcon";
-import TeamLogo from "@/components/TeamLogo";
+import TeamLogo, { CenterLogo } from "@/components/TeamLogo";
 import { MORE_ITEMS, NavItem, OPS_ITEMS, activeHref, visibleFor } from "@/lib/nav";
 import { useIsAdmin } from "@/lib/self";
 
@@ -58,6 +58,10 @@ export default function Sidebar({ onOpenPalette }: { onOpenPalette: () => void }
       <nav className="mx-3 mt-3 space-y-0.5 border-t border-separator pt-3">
         {visibleFor(MORE_ITEMS, isAdmin).map((i) => renderItem(i, true))}
       </nav>
+
+      <div className="mt-auto px-4 pb-5 pt-6">
+        <CenterLogo className="h-auto w-full max-w-[180px] opacity-90" />
+      </div>
     </aside>
   );
 }

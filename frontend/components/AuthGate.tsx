@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AUTH_EXPIRED_EVENT, AUTH_PROVIDER, MeMember, fetchMe, installFetchAuth, signIn, signOut } from "@/lib/auth";
 import { getSupabaseClient } from "@/lib/supabase";
 import { AuthContext } from "@/lib/self";
-import TeamLogo from "@/components/TeamLogo";
+import { CenterLogo } from "@/components/TeamLogo";
 import JoinRequest from "@/components/JoinRequest";
 import { installErrorReporter } from "@/lib/errorReporter";
 
@@ -42,10 +42,11 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-grouped p-6">
       <div className="w-full max-w-sm rounded-2xl bg-card p-6 text-center shadow-xs">
-        <TeamLogo className="mb-5 justify-center" />
+        <img src="/toloc-logo.png" alt="Toloc トロック" className="mx-auto mb-4 h-28 w-28" />
         <h1 className="text-lg font-semibold text-label">Toloc OS</h1>
         <p className="mt-1 text-sm text-label-2">大阪大学 福島拠点 観光班</p>
         {children}
+        <CenterLogo className="mx-auto mt-8 h-auto w-full max-w-[220px]" />
       </div>
     </div>
   );
