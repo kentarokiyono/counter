@@ -1,0 +1,29 @@
+# 毎朝 7:00（日本時間）に、期限・イベントのお知らせを Discord とスマホに送る。
+# 必要な設定（GitHub → Settings → Secrets and variables → Actions）:
+#   BACKEND_URL  … バックエンドのURL（例 https://toloc-backend.onrender.com）
+#   CRON_SECRET  … バックエンドの環境変数 CRON_SECRET と同じ値
+name: Daily digest
+
+on:
+  schedule:
+    - cron: "0 22 * * *" # UTC 22:00 = 日本時間 7:00
+  workflow_dispatch:
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 起こす（無料プランのスリープ対策）
+        run: |
+          if [ -z "$BACKEND_URL" ]; then echo "BACKEND_URL 未設定のためスキップ"; exit 0; fi
+          curl -sS --retry 5 --retry-delay 15 --max-time 60 "$BACKEND_URL/api/health" > /dev/null
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+      - name: お知らせを送る
+        run: |
+          if [ -z "$BACKEND_URL" ] || [ -z "$CRON_SECRET" ]; then echo "未設定のためスキップ"; exit 0; fi
+          curl -sS --fail --max-time 60 -X POST "$BACKEND_URL/api/cron/daily-digest" \
+            -H "X-Cron-Secret: $CRON_SECRET"
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}

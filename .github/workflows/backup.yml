@@ -1,0 +1,33 @@
+# 毎週月曜 3:00（日本時間）に全データを書き出して保存する（90日間保管）。
+# Supabase 無料プランは自動バックアップが無く、1週間アクセスが無いと一時停止されるため、その対策も兼ねる。
+# 保存先: このリポジトリの Actions → Backup → 各実行の Artifacts（リポジトリを見られる人だけが取得できる）
+# 必要な Secrets: BACKEND_URL, CRON_SECRET
+# 戻し方: backend/restore_backup.py の説明を参照（backup.json.gz）
+name: Backup
+
+on:
+  schedule:
+    - cron: "0 18 * * 0" # UTC 日曜 18:00 = 日本時間 月曜 3:00
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 書き出す
+        run: |
+          if [ -z "$BACKEND_URL" ] || [ -z "$CRON_SECRET" ]; then echo "未設定のためスキップ"; exit 0; fi
+          curl -sS --retry 5 --retry-delay 20 --max-time 90 "$BACKEND_URL/api/health" > /dev/null || true
+          curl -sS --fail --max-time 120 "$BACKEND_URL/api/cron/backup" -H "X-Cron-Secret: $CRON_SECRET" -o backup.json
+          python3 -c "import json;d=json.load(open('backup.json'));print({k:(len(v) if v is not None else '読めず') for k,v in d['tables'].items()})"
+          gzip -9 backup.json
+          echo "STAMP=$(TZ=Asia/Tokyo date +%Y%m%d)" >> "$GITHUB_ENV"
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+      - uses: actions/upload-artifact@v4
+        if: hashFiles('backup.json.gz') != ''
+        with:
+          name: backup-${{ env.STAMP }}
+          path: backup.json.gz
+          retention-days: 90
