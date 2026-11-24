@@ -1,0 +1,5 @@
+{
+  "_comment": "メンバー名とDiscordのユーザーIDの対応（任意）。例: { \"name\": \"山田\", \"role\": \"\", \"discord_user_id\": \"123...\" }。user_idはDiscordの開発者モードで取得。",
+  "members": [],
+  "roles": []
+}
