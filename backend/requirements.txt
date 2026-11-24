@@ -1,10 +1,10 @@
-fastapi==0.141.1
-uvicorn[standard]==0.30.6
+fastapi==0.165.0
+uvicorn[standard]==0.54.0
 # supabase 2.31 系は新形式APIキー（sb_secret_ / sb_publishable_）に対応し、pydantic 2.13 を要求する
-pydantic==2.13.5
-pydantic-settings==2.5.2
-supabase==2.31.0
+pydantic==2.14.4
+pydantic-settings==2.16.3
+supabase==2.34.1
 httpx==0.28.1
-python-dotenv==1.2.2
+python-dotenv==1.2.4
 # スマホへの通知（Web Push）
-pywebpush==2.0.3
+pywebpush==2.5.0
